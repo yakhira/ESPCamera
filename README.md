@@ -1,4 +1,4 @@
-# ESP32 default sketch
+# ESP32 camera sketch
 
 ## WIFI setup
 
