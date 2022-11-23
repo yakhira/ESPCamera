@@ -1,0 +1,30 @@
+<html>
+<head>
+    <script>
+        var xhttp = new XMLHttpRequest(); 
+        xhttp.setRequestHeader('Content-Type', 'text/xml'); 
+        xhttp.overrideMimeType('text/xml');
+
+        function ledControl(arg) { 
+            xhttp.open('GET', 'led?'+ arg, true); 
+            xhttp.send() 
+        }
+
+        function sleep(arg) { 
+            xhttp.open('GET', 'sleep', true); 
+            xhttp.send() 
+        }
+    </script>
+</head>
+<body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <p align="center"><img src="/stream"></p><br /><br />
+
+    <p align="center">
+        <button style=width:140px;height:40px onmousedown="ledControl('on')">LED ON</button>
+        <button style=width:140px;height:40px onmousedown="ledControl('off')">LED OFF</button>
+        <button style=width:140px;height:40px onmousedown="sleep()">Sleep</button>
+    </p>
+</body>
+
+</html>
