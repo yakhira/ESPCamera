@@ -5,7 +5,7 @@
 #include "camera/camera.h"
 
 // -------- DEFAULT SKETCH PARAMETERS --------
-const int SKETCH_VERSION = 0;
+const int SKETCH_VERSION = 2;
 
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1

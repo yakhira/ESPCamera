@@ -16,8 +16,12 @@ class ESPUtils {
         void listDir(const char * dirname, uint8_t levels);
         void removeFile(String filename);
 
+        bool getHTTPData(String url, String &result);
+        bool downloadFile(String url, String filename);
         bool getHTTPJsonData(String url, JSONVar &result);
         bool sendHTTPJsonData(String url, JSONVar data);
+
+        void removeString(String string, String from, String to, String &result);
 
         bool fsMounted = false;
 
@@ -26,6 +30,7 @@ class ESPUtils {
         t_httpUpdate_return updateSketch(String url);
 
         WiFiClient client;
+        WiFiClientSecure clientSecure;
 
         ESPUtils();
         ~ESPUtils();

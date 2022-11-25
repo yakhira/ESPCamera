@@ -113,10 +113,73 @@ void ESPUtils::listDir(const char * dirname, uint8_t levels){
     }
 }
 
+bool ESPUtils::getHTTPData(String url, String &result) {
+	HTTPClient http;
+
+	if (url.indexOf("https") >= 0) {
+		http.begin(clientSecure, url);
+	} else {
+		http.begin(client, url);
+	}
+
+	int httpCode = http.GET();
+
+	if (httpCode == HTTP_CODE_OK) {
+		result = http.getString();
+	}
+	http.end();
+	return (httpCode == HTTP_CODE_OK);
+}
+
+bool ESPUtils::downloadFile(String url, String filename) {
+	HTTPClient http;
+	uint8_t buff[128] = { 0 };
+
+	if (url.indexOf("https") >= 0) {
+		http.begin(clientSecure, url);
+	} else {
+		http.begin(client, url);
+	}
+
+
+	int httpCode = http.GET();
+
+	if (httpCode == HTTP_CODE_OK) {
+		int httpSize = http.getSize();
+		WiFiClient * stream = http.getStreamPtr();
+
+		mountFS();
+
+		File file = LittleFS.open(filename, "w");
+		if (file) {
+			while (http.connected() && (httpSize > 0 || httpSize == -1)) {
+				size_t size = stream->available();
+				if(size) {
+					int bytes = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+					file.write(buff, bytes);
+					if(httpSize > 0) httpSize -= bytes;
+				}
+			} 
+			file.close();
+		} else {
+			file.close();
+			http.end();
+			return false;
+		}
+	}
+	http.end();
+	return (httpCode == HTTP_CODE_OK);
+}
+
 bool ESPUtils::getHTTPJsonData(String url, JSONVar &result) {
 	HTTPClient http;
 
-	http.begin(client, url);
+	if (url.indexOf("https") >= 0) {
+		http.begin(clientSecure, url);
+	} else {
+		http.begin(client, url);
+	}
+
 	int httpCode = http.GET();
 
 	if (httpCode == HTTP_CODE_OK) {
@@ -133,13 +196,32 @@ bool ESPUtils::getHTTPJsonData(String url, JSONVar &result) {
 bool ESPUtils::sendHTTPJsonData(String url, JSONVar data) {
 	HTTPClient http;
 
-	http.begin(client, url);
+	if (url.indexOf("https") >= 0) {
+		http.begin(clientSecure, url);
+	} else {
+		http.begin(client, url);
+	}
+
 	http.addHeader("Content-Type", "application/json");
 
 	int httpCode = http.POST(JSON.stringify(data));
 	http.end();
 
 	return (httpCode == HTTP_CODE_OK);
+}
+
+void ESPUtils::removeString(String string, String from, String to, String &result) {
+	int patternFrom = string.indexOf(from);
+	int patternTo = string.indexOf(to);
+
+	if (patternTo >= 0 && patternFrom >= 0) {
+		string.remove(
+		patternFrom + from.length(),
+		patternTo - patternFrom - to.length()
+		);
+	}
+
+	result = string;
 }
 
 t_httpUpdate_return ESPUtils::updateSketch(String url){
