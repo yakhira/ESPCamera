@@ -24,7 +24,7 @@ const int SKETCH_VERSION = 2;
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
-#define GPIO_PIN_WAKEUP GPIO_NUM_12
+#define DEFAULT_SLEEP_TIME_MIN 5
 #define GPIO_PIN_LED GPIO_NUM_13
 
 ESPWiFi espwifi("ESP32-D0WDQ5");
@@ -80,21 +80,6 @@ void main_code()
         request->send(response);
     });
 
-	server->on("/sleep", HTTP_GET, [] (AsyncWebServerRequest *request) {
-		digitalWrite(GPIO_PIN_LED, LOW);
-
-		gpio_deep_sleep_hold_en();
-		gpio_hold_en(GPIO_PIN_LED);
-
-		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
-		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
-
-		esp_sleep_enable_ext0_wakeup(GPIO_PIN_WAKEUP, HIGH);
-		esp_deep_sleep_start();
-
-       	request->send(200, "text/html", "OK");
-    });
-
 	server->on("/led", HTTP_GET, [](AsyncWebServerRequest *request){
         if (request->hasArg("on")){
             digitalWrite(GPIO_PIN_LED, HIGH);
@@ -112,6 +97,27 @@ void main_code()
 	Serial.println("URL: http://" + WiFi.localIP().toString());
 }
 
+void sleep_state(){
+	String result;
+	int sleep_time = DEFAULT_SLEEP_TIME_MIN;
+
+	if (espwifi.getHTTPData(espwifi.dataUrl + "/esp/camera", result)) {
+		sleep_time = result.toInt();
+	}
+
+	if (sleep_time > 0){
+		digitalWrite(GPIO_PIN_LED, LOW);
+
+		gpio_deep_sleep_hold_en();
+		gpio_hold_en(GPIO_PIN_LED);
+
+		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
+		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
+
+		esp_sleep_enable_timer_wakeup(sleep_time*60*1000000);
+		esp_deep_sleep_start();
+	}
+}
 
 void setup(){
 	WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
@@ -126,6 +132,7 @@ void setup(){
 	WiFi.setSleep(WIFI_PS_NONE);
 
 	if (WiFi.getMode() == WIFI_STA) {
+		sleep_state();
 		espwifi.updateSketch(SKETCH_VERSION);
 		main_code();
 	}
@@ -136,5 +143,7 @@ void loop(){
 		if (WiFi.status() != WL_CONNECTED) {
 			WiFi.reconnect();
 		}
-	}
+		sleep_state();
+		delay(5000);
+	} 
 }
